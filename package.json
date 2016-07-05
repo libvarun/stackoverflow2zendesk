@@ -1,0 +1,16 @@
+{
+  "name": "stackoverflow2zendesk",
+  "version": "1.0.0",
+  "description": "Track new questions on StackOverflow and post as new tickets on Forge Zendesk",
+  "main": "server.js",
+  "author": "Augusto Goncalves",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.14.0",
+    "node-cron": "^1.1.1",
+    "node-zendesk": "^1.1.9",
+    "request": "^2.72.0",
+    "sanitize-html": "^1.12.0",
+    "trim": "0.0.1"
+  }
+}
