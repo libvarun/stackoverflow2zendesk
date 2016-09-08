@@ -7,9 +7,9 @@ var htmlToText = require('html-to-text');
 
 // SETUP: zendesk
 var zendeskclient = zendesk.createClient({
-    username: 'your user name here',
-    token: 'your token here',
-    remoteUri: 'https://YOUR_DOMAIN.zendesk.com/api/v2',
+    username: 'yourzendeskaccount@some.com',
+    token: 'yourzendesktoken',
+    remoteUri: 'https://YOURDOMAIN.zendesk.com/api/v2',
     //debug: true
 });
 
@@ -24,10 +24,10 @@ var TAGS = [
     'autodesk-3d-print'
 ];
 // 2. developer key
-var STACKOVERFLOW_DEVELOPER_KEY = 'your key here'; // this is used for quota (10k per day)
+var STACKOVERFLOW_DEVELOPER_KEY = 'yourstackoverflowtoken'; // this is used for quota (10k per day)
 
 // 3. email alias of the portal (form)
-var PORTAL_EMAIL_ALIAS = 'EMAIL FORM ALIAS';
+var PORTAL_EMAIL_ALIAS = 'noreply@youportal.com';
 
 // get new questions from stackoverflow every 10 minutes
 cron.schedule('0,10,20,30,40,50 * * * *', function () {
@@ -178,10 +178,15 @@ function makeRequest(url, onsuccess) {
             onsuccess(null);
         } // connection problems
 
-        if (body == null || body.errno != null || response.statusCode != 200) {
+        if (body == null) {
+            console.log(error);
+            return;
+        }
+        if (body != null && body.errno != null && response.statusCode != 200) {
             console.log(body.quota_remaining);
             console.log(body.errors);
         }
+
         if (body.errno == null)
             body = JSON.parse(body);
         //console.log(body.quota_remaining);
@@ -189,10 +194,13 @@ function makeRequest(url, onsuccess) {
     })
 }
 
-// this function will get questions that come from the Forge Dev Portal (by email) and change
-// the requester to the email that sent the question, otherwise the replies will go to forge email alias
+
 function adjustQuestionsFromForgePortal() {
     zendeskclient.search.query("type:ticket status:new requester:" + PORTAL_EMAIL_ALIAS, function (err, req, tickets) {
+        if (err != null || tickets == null) {
+            console.log(err);
+            return;
+        }
         tickets.forEach(function (ticket, index) {
             // now the ticket is recoverd, let's change the requested ID based on the
             // email of the user who sent the question
@@ -223,15 +231,16 @@ function adjustQuestionsFromForgePortal() {
                         }
                     };
                     zendeskclient.users.create(user, function (err, req, newuser) {
-                        if (err!=null){
+                        if (err != null) {
                             console.log(err);
                             return;
                         }
                         console.log('\tNew end-user for user ' + props['UsersEmail']);
                         emailuser = newuser;
+
                     });
                 }
-
+                // on the next run, the user will be valid
                 // now that we have the user, let's update the ticket
                 if (emailuser != null) {
                     var tags = [];
@@ -250,12 +259,16 @@ function adjustQuestionsFromForgePortal() {
                         }
 
                         if (err == null)
-                            console.log('Form ticket ' + updatedTicket.id + ' adjusted for user: ' + emailuser.email);
+                            console.log('\tForm ticket ' + updatedTicket.id + ' adjusted for user: ' + emailuser.email);
                     });
                 }
+
             });
         });
     });
 }
 
 console.log('Running for tags: ' + TAGS.join(';'));
+adjustQuestionsFromForgePortal();
+
+
