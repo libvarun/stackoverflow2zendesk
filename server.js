@@ -7,9 +7,9 @@ var htmlToText = require('html-to-text');
 
 // SETUP: zendesk
 var zendeskclient = zendesk.createClient({
-    username: 'yourzendeskaccount@some.com',
-    token: 'yourzendesktoken',
-    remoteUri: 'https://YOURDOMAIN.zendesk.com/api/v2',
+    username: process.env.ZENDESK_USERNAME,
+    token: process.env.ZENDESK_TOKEN,
+    remoteUri: process.env.ZENDESK_REMOTEURI,
     //debug: true
 });
 
@@ -21,27 +21,30 @@ var TAGS = [
     'autodesk-model-derivative',
     'autodesk-viewer',
     'autodesk-designautomation',
-    'autodesk-3d-print'
+    'autodesk-webhooks',
+    'autodesk-realitycapture',
+    'autodesk-bim360'
 ];
 // 2. developer key
-var STACKOVERFLOW_DEVELOPER_KEY = 'yourstackoverflowtoken'; // this is used for quota (10k per day)
+var STACKOVERFLOW_DEVELOPER_KEY = process.env.STACKOVERFLOW_DEVELOPERKEY; // this is used for quota (10k per day)
 
 // 3. email alias of the portal (form)
-var PORTAL_EMAIL_ALIAS = 'noreply@youportal.com';
+var PORTAL_EMAIL_ALIAS = process.env.PORTAL_EMAIL
 
 // get new questions from stackoverflow every 10 minutes
 cron.schedule('0,10,20,30,40,50 * * * *', function () {
-    console.log('Searching for new questions - ' + (new Date()).toString());
     getNewQuestions();
 });
 
 // adjust questions from portal form every aprox. 3 minutes (10 calls per minute limitation)
-cron.schedule('3,5,8,13,15,17,23,25,27,33,35,37,43,45,47,53,55,57 * * * *', function () {
-    console.log('Analyzing tickets from portal - ' + (new Date()).toString());
+cron.schedule('3,5,8,13,15,17,23,25,27,33,35,43,45,47,53,55,57 * * * *', function () {
+    //cron.schedule('5,15,25,35,45,55 * * * *', function () {
     adjustQuestionsFromForgePortal();
 });
 
 function getNewQuestions() {
+    console.log('Stackoverflow - ' + (new Date()).toString());
+
     // time range: 1 hour back
     // if we take several questions, then we need to check them all
     // on Zendesk, but there is a rate limit for calling Zendesk API
@@ -100,7 +103,9 @@ function processQuestions(questions) {
 
 function getZendeskUser(stackuser, onuser) {
     // first check if the user exists...
-    zendeskclient.users.search({external_id: stackuser.user_id}, function (err, req, users) {
+    if (stackuser == null) { onuser(null); return }
+    if (typeof stackuser === "undefined") { onuser(null); return; }
+    zendeskclient.users.search({ external_id: stackuser.user_id }, function (err, req, users) {
         if (users != null && users.length == 0) {
             // if not, then create
             // (use stackoverflow user ID as zendesk end-user external ID
@@ -129,7 +134,7 @@ function getZendeskUser(stackuser, onuser) {
 
 function createZendeskTicket(stackquestion, zendeskuser, onnewticket) {
     // check if the question is already logged (as a ticket)
-    zendeskclient.tickets.show({external_id: stackquestion.question_id}, function (err, req, tickets) {
+    zendeskclient.tickets.show({ external_id: stackquestion.question_id }, function (err, req, tickets) {
         if (tickets != null && tickets.length == 0) {
             // if not, create a new ticket with the question information
             // (use stackoverflow question ID as zendesk ticket external ID
@@ -139,11 +144,11 @@ function createZendeskTicket(stackquestion, zendeskuser, onnewticket) {
                     "subject": htmlToText.fromString(stackquestion.title),
                     "comment": {
                         "html_body": // this header will remember agents to not reply on zendesk UI
-                        '<h3><span style="color: red">IMPORTANT:</span> answer at '
-                        + '<a href="' + stackquestion.link + '" target="_blank">Stackoverflow</a></h3>'
-                        + '-----------------------------------------'
-                        // the actual question body
-                        + stackquestion.body,
+                            '<h3><span style="color: red">IMPORTANT:</span> answer at '
+                            + '<a href="' + stackquestion.link + '" target="_blank">Stackoverflow</a></h3>'
+                            + '-----------------------------------------'
+                            // the actual question body
+                            + stackquestion.body,
                     },
                     'requester_id': zendeskuser.id,
                     'tags': stackquestion.tags,
@@ -187,17 +192,18 @@ function makeRequest(url, onsuccess) {
             console.log(body.errors);
         }
 
-        if (body.errno == null)
-            body = JSON.parse(body);
-        //console.log(body.quota_remaining);
+        try { if (body.errno == null) body = JSON.parse(body); }
+        catch (e) { body = ''; }
         onsuccess(body);
     })
 }
 
 
 function adjustQuestionsFromForgePortal() {
+    console.log('Portal - ' + (new Date()).toString());
+
     zendeskclient.search.query("type:ticket status:new requester:" + PORTAL_EMAIL_ALIAS, function (err, req, tickets) {
-        if (err != null || tickets == null) {
+        if (err != null || tickets == null || typeof tickets.forEach !== "function") {
             console.log(err);
             return;
         }
@@ -217,7 +223,7 @@ function adjustQuestionsFromForgePortal() {
 
             // now check if there is a user with this email account
             var query = 'type:user email:' + props['UsersEmail'];
-            zendeskclient.users.search({query: query}, function (err, req, users) {
+            zendeskclient.users.search({ query: query }, function (err, req, users) {
                 var emailuser = (users != null && users.length > 0 ? users[0] : null);
 
                 // if not user yet, let's create it
@@ -270,5 +276,4 @@ function adjustQuestionsFromForgePortal() {
 
 console.log('Running for tags: ' + TAGS.join(';'));
 adjustQuestionsFromForgePortal();
-
-
+getNewQuestions();
