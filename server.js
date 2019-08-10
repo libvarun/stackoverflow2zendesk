@@ -42,6 +42,11 @@ cron.schedule('3,5,8,13,15,17,23,25,27,33,35,43,45,47,53,55,57 * * * *', functio
     adjustQuestionsFromForgePortal();
 });
 
+// check for Over SLA every hour
+cron.schedule('1 * * * *', function () {
+    getOverSLA();
+});
+
 function getNewQuestions() {
     console.log('Stackoverflow - ' + (new Date()).toString());
 
@@ -274,6 +279,32 @@ function adjustQuestionsFromForgePortal() {
     });
 }
 
+function getOverSLA() {
+    // this routine runs every hour, so let's check any ticket >24 & <25 hours old
+    var now = new Date();
+    var before24 = new Date(now - 60000 * 60 * 24 /*hour*/);
+    var before25 = new Date(now - 60000 * 60 * 25 /*hour*/);
+
+    console.log('Over SLA check - ' + (new Date()).toString())
+
+    zendeskclient.search.query("status:new created>" + before25.toISOString() + " created<" + before24.toISOString(), function (err, req, tickets) {
+        if (err != null || tickets == null || typeof tickets.forEach !== "function") {
+            console.log(err);
+            return;
+        }
+        tickets.forEach(function (ticket, index) {
+            // slack notification
+            request.post({
+                'url': 'https://hooks.slack.com/services/' + process.env.SLACK_KEY,
+                'Content-Type': 'application/json',
+                'body': JSON.stringify({ text: 'Ticket over SLA: https://forge.zendesk.com/agent/tickets/' + ticket.id })
+            });
+        });
+    });
+}
+
+
 console.log('Running for tags: ' + TAGS.join(';'));
 adjustQuestionsFromForgePortal();
 getNewQuestions();
+getOverSLA();
