@@ -297,7 +297,7 @@ function getOverSLA() {
             request.post({
                 'url': 'https://hooks.slack.com/services/' + process.env.SLACK_KEY,
                 'Content-Type': 'application/json',
-                'body': JSON.stringify({ text: 'Ticket over SLA: ' + ticket.subject + ' \nhttps://forge.zendesk.com/agent/tickets/' + ticket.id })
+                'body': JSON.stringify({ text: '<!here> Ticket over SLA: ' + ticket.subject + ' \nhttps://forge.zendesk.com/agent/tickets/' + ticket.id })
             });
         });
     });
