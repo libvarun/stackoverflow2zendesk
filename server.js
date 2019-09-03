@@ -4,6 +4,7 @@ var cron = require('node-cron');
 var trim = require('trim');
 var zendesk = require('node-zendesk');
 var htmlToText = require('html-to-text');
+var postmark = require("postmark");
 
 // SETUP: zendesk
 var zendeskclient = zendesk.createClient({
@@ -46,6 +47,12 @@ cron.schedule('3,5,8,13,15,17,23,25,27,33,35,43,45,47,53,55,57 * * * *', functio
 cron.schedule('1 * * * *', function () {
     getOverSLA();
 });
+
+// check for Over SLA every hour
+cron.schedule('6 * * * *', function () {
+    getRecentlyClosed();
+});
+
 
 function getNewQuestions() {
     console.log('Stackoverflow - ' + (new Date()).toString());
@@ -304,7 +311,39 @@ function getOverSLA() {
 }
 
 
+function getRecentlyClosed() {
+    var postmarkClient = new postmark.Client(process.env.POSTMARK_ACCOUNT_ID);
+
+    var now = new Date();
+    var before1 = new Date(now - 60000 * 60 * 1 /*hour*/);
+
+    zendeskclient.search.query("created>2019-09-01T00:00:00.000Z solved>" + before1.toISOString(), function (err, req, tickets) {
+        if (err != null || tickets == null || typeof tickets.forEach !== "function") {
+            console.log(err);
+            return;
+        }
+        tickets.forEach(function (ticket, index) {
+            if (ticket.via.channel === 'api') return; // stackoverflow, not possible to get NPS
+
+            zendeskclient.users.show(ticket.requester_id, function (err, req, user) {
+                postmarkClient.sendEmail({
+                    "From": process.env.POSTMARK_FROM_EMAIL,
+                    "To": user.email,
+                    "Subject": "Autodesk Forge: How did we do?",
+                    "HtmlBody": 'Dear ' + user.name + '<br/><br/>Thank you for reaching Forge Support. We hope we were able to answer your question on ticket #' + ticket.id + '.<br/><br/><a href=\"https://autodeskfeedback.az1.qualtrics.com/jfe/form/SV_erkQv1I5RASpR0F?CASEID=' + ticket.id + '\">Take the survey</a>.<br/><br/>Regards,<br/>The Forge Team<br/><br/><img src="https://developer.static.autodesk.com/forgeunified/releases/current/1.0.0.20190801055952/images/logo_forge-2-line.png" height="30"/>'
+                }).then(function (res) {
+                    console.log('email sent to ' + user.email)
+                }).catch(function (err) {
+                    console.log(err);
+                });
+            });
+        });
+    });
+}
+
+
 console.log('Running for tags: ' + TAGS.join(';'));
 adjustQuestionsFromForgePortal();
 getNewQuestions();
 getOverSLA();
+getRecentlyClosed();
