@@ -287,10 +287,10 @@ function adjustQuestionsFromForgePortal() {
 }
 
 function getOverSLA() {
-    // this routine runs every hour, so let's check any ticket >24 & <25 hours old
+    // this routine runs every hour, so let's check any ticket >19 & <20 hours old
     var now = new Date();
-    var before24 = new Date(now - 60000 * 60 * 24 /*hour*/);
-    var before25 = new Date(now - 60000 * 60 * 25 /*hour*/);
+    var before24 = new Date(now - 60000 * 60 * 19 /*hour*/);
+    var before25 = new Date(now - 60000 * 60 * 20 /*hour*/);
 
     console.log('Over SLA check - ' + (new Date()).toString())
 
