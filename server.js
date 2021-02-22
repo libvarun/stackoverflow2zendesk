@@ -37,19 +37,18 @@ cron.schedule('0,10,20,30,40,50 * * * *', function () {
     getNewQuestions();
 });
 
-// adjust questions from portal form every aprox. 3 minutes (10 calls per minute limitation)
-cron.schedule('3,5,8,13,15,17,23,25,27,33,35,43,45,47,53,55,57 * * * *', function () {
-    //cron.schedule('5,15,25,35,45,55 * * * *', function () {
+// adjust questions from portal form every 10 minutes
+cron.schedule('5,15,25,35,45,55 * * * *', function () {
     adjustQuestionsFromForgePortal();
 });
 
 // check for Over SLA every hour
-cron.schedule('1 * * * *', function () {
+cron.schedule('7 * * * *', function () {
     getOverSLA();
 });
 
-// check for Over SLA every hour
-cron.schedule('6 * * * *', function () {
+// send NPS survey every hour
+cron.schedule('57 * * * *', function () {
     getRecentlyClosed();
 });
 
@@ -172,14 +171,23 @@ function createZendeskTicket(stackquestion, zendeskuser, onnewticket) {
                     'created_at': new Date(stackquestion.creation_date * 1000).getTime(),
                 }
             };
-            zendeskclient.tickets.create(ticket, function (err, req, newticket) {
-                console.log('\tNew ticket for question ' + stackquestion.question_id);
-                if (err != null) console.log(err);
-                onnewticket(newticket);
-            });
+            createZendeskTicketRetry(ticket, onnewticket);
         }
         else
             onnewticket(tickets == null ? null : tickets[0]);
+    });
+}
+
+function createZendeskTicketRetry(ticket, onnewticket) {
+    zendeskclient.tickets.create(ticket, function (err, req, newticket) {
+        if (err != null) {
+            console.log(err);
+            if (err!= null && err.statusCode !== 429) return;
+            setTimeout(() => { createZendeskTicketRetry(ticket, onnewticket) }, Number.parseInt(err.retryAfter) /* seconds */ * 1000);
+            return;
+        }
+        console.log('\tNew ticket for question ' + newticket.external_id);
+        onnewticket(newticket);
     });
 }
 
