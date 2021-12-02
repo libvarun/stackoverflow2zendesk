@@ -182,7 +182,7 @@ function createZendeskTicketRetry(ticket, onnewticket) {
     zendeskclient.tickets.create(ticket, function (err, req, newticket) {
         if (err != null) {
             console.log(err);
-            if (err!= null && err.statusCode !== 429) return;
+            if (err != null && err.statusCode !== 429) return;
             setTimeout(() => { createZendeskTicketRetry(ticket, onnewticket) }, Number.parseInt(err.retryAfter) /* seconds */ * 1000);
             return;
         }
@@ -338,7 +338,7 @@ function getRecentlyClosed() {
                     "From": process.env.POSTMARK_FROM_EMAIL,
                     "To": user.email,
                     "Subject": "Autodesk Forge: How did we do?",
-                    "HtmlBody": 'Dear ' + user.name + '<br/><br/>Thank you for reaching Forge Support. We hope we were able to answer your question on ticket #' + ticket.id + '.<br/><br/><a href=\"https://autodeskfeedback.az1.qualtrics.com/jfe/form/SV_erkQv1I5RASpR0F?CASEID=' + ticket.id + '\">Take the survey</a>.<br/><br/>Regards,<br/>The Forge Team<br/><br/><img src="https://developer.static.autodesk.com/forgeunified/releases/current/1.0.0.20190801055952/images/logo_forge-2-line.png" height="30"/>'
+                    "HtmlBody": 'Dear ' + user.name + '<br/><br/>Thank you for reaching Forge Support. We hope we were able to answer your question on ticket #' + ticket.id + ' - ' + ticket.title + '.<br/><br/><a href=\"https://autodeskfeedback.az1.qualtrics.com/jfe/form/SV_erkQv1I5RASpR0F?CASEID=' + ticket.id + '\">Take the survey</a>.<br/><br/>Regards,<br/>The Forge Team<br/><br/><img src="https://developer.static.autodesk.com/forgeunified/releases/current/1.0.0.20190801055952/images/logo_forge-2-line.png" height="30"/>'
                 }).then(function (res) {
                     console.log('email sent to ' + user.email)
                 }).catch(function (err) {
