@@ -325,7 +325,7 @@ function getRecentlyClosed() {
     var now = new Date();
     var before1 = new Date(now - 60000 * 60 * 1 /*hour*/);
 
-    zendeskclient.search.query("created>2019-09-01T00:00:00.000Z solved>" + before1.toISOString(), function (err, req, tickets) {
+    zendeskclient.search.query("created>2021-09-01T00:00:00.000Z solved>" + before1.toISOString(), function (err, req, tickets) {
         if (err != null || tickets == null || typeof tickets.forEach !== "function") {
             console.log(err);
             return;
