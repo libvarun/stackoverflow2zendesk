@@ -6,11 +6,11 @@
   "author": "Augusto Goncalves",
   "license": "MIT",
   "dependencies": {
+    "@sendgrid/mail": "^7.7.0",
     "express": "^4.16.3",
     "html-to-text": "^4.0.0",
     "node-cron": "^1.2.1",
     "node-zendesk": "1.4.0",
-    "postmark": "^2.2.9",
     "request": "^2.87.0",
     "sanitize-html": "^1.12.0",
     "trim": "0.0.1"
