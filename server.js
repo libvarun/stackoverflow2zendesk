@@ -311,7 +311,7 @@ function getOverSLA() {
             request.post({
                 'url': 'https://hooks.slack.com/services/' + process.env.SLACK_KEY,
                 'Content-Type': 'application/json',
-                'body': JSON.stringify({ text: '<!here> Ticket over SLA: ' + ticket.subject + ' \nhttps://forge.zendesk.com/agent/tickets/' + ticket.id })
+                'body': JSON.stringify({ text: '<!here> Ticket over SLA: ' + ticket.subject + ' \nhttps://aps.zendesk.com/agent/tickets/' + ticket.id })
             });
         });
     });
@@ -335,13 +335,13 @@ function getRecentlyClosed() {
                 const msg = {
                     "From": process.env.SENDGRID_FROM_EMAIL,
                     "To": user.email,
-                    "Subject": "Autodesk Forge: How did we do?",
-                    "HtmlBody": 'Dear ' + user.name + '<br/><br/>Thank you for reaching Forge Support. We hope we were able to answer your question on ticket #' + ticket.id + ' - ' + ticket.subject + '.<br/><br/><a href=\"https://autodeskfeedback.az1.qualtrics.com/jfe/form/SV_erkQv1I5RASpR0F?CASEID=' + ticket.id + '\">Take the survey</a>.<br/><br/>Regards,<br/>The Forge Team<br/><br/><img src="https://developer.static.autodesk.com/forgeunified/releases/current/1.0.0.20190801055952/images/logo_forge-2-line.png" height="30"/>'
+                    "Subject": "Autodesk Platform Services, formerly Forge: How did we do?",
+                    "HtmlBody": 'Dear ' + user.name + '<br/><br/>Thank you for reaching Forge Support. We hope we were able to answer your question on ticket #' + ticket.id + ' - ' + ticket.subject + '.<br/><br/><a href=\"https://autodeskfeedback.az1.qualtrics.com/jfe/form/SV_erkQv1I5RASpR0F?CASEID=' + ticket.id + '\">Take the survey</a>.<br/><br/>Regards,<br/>The Forge Team<br/><br/><img src="https://github.com/autodesk-platform-services/cdn/blob/main/wwwroot/logo/white/stacked.png" height="30"/>'
                 }
                 sgMail
                 .send(msg)
                 .then(() => {
-                    console.log('Email sent')
+                    console.log('Email sent to:', user.email)
                 })
                 .catch((error) => {
                     console.error(error)
