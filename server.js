@@ -1,10 +1,9 @@
 var request = require('request');
-var zlib = require('zlib');
 var cron = require('node-cron');
 var trim = require('trim');
 var zendesk = require('node-zendesk');
 var htmlToText = require('html-to-text');
-var postmark = require("postmark");
+const sgMail = require('@sendgrid/mail')
 
 // SETUP: zendesk
 var zendeskclient = zendesk.createClient({
@@ -312,7 +311,7 @@ function getOverSLA() {
             request.post({
                 'url': 'https://hooks.slack.com/services/' + process.env.SLACK_KEY,
                 'Content-Type': 'application/json',
-                'body': JSON.stringify({ text: '<!here> Ticket over SLA: ' + ticket.subject + ' \nhttps://forge.zendesk.com/agent/tickets/' + ticket.id })
+                'body': JSON.stringify({ text: '<!here> Ticket over SLA: ' + ticket.subject + ' \nhttps://aps.zendesk.com/agent/tickets/' + ticket.id })
             });
         });
     });
@@ -320,11 +319,10 @@ function getOverSLA() {
 
 
 function getRecentlyClosed() {
-    var postmarkClient = new postmark.Client(process.env.POSTMARK_ACCOUNT_ID);
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY)
 
     var now = new Date();
     var before1 = new Date(now - 60000 * 60 * 1 /*hour*/);
-
     zendeskclient.search.query("created>2021-09-01T00:00:00.000Z solved>" + before1.toISOString(), function (err, req, tickets) {
         if (err != null || tickets == null || typeof tickets.forEach !== "function") {
             console.log(err);
@@ -332,18 +330,22 @@ function getRecentlyClosed() {
         }
         tickets.forEach(function (ticket, index) {
             if (ticket.via.channel === 'api') return; // stackoverflow, not possible to get NPS
-
+            
             zendeskclient.users.show(ticket.requester_id, function (err, req, user) {
-                postmarkClient.sendEmail({
-                    "From": process.env.POSTMARK_FROM_EMAIL,
+                const msg = {
+                    "From": process.env.SENDGRID_FROM_EMAIL,
                     "To": user.email,
-                    "Subject": "Autodesk Forge: How did we do?",
-                    "HtmlBody": 'Dear ' + user.name + '<br/><br/>Thank you for reaching Forge Support. We hope we were able to answer your question on ticket #' + ticket.id + ' - ' + ticket.subject + '.<br/><br/><a href=\"https://autodeskfeedback.az1.qualtrics.com/jfe/form/SV_erkQv1I5RASpR0F?CASEID=' + ticket.id + '\">Take the survey</a>.<br/><br/>Regards,<br/>The Forge Team<br/><br/><img src="https://developer.static.autodesk.com/forgeunified/releases/current/1.0.0.20190801055952/images/logo_forge-2-line.png" height="30"/>'
-                }).then(function (res) {
-                    console.log('email sent to ' + user.email)
-                }).catch(function (err) {
-                    console.log(err);
-                });
+                    "Subject": "Autodesk Platform Services, formerly Forge: How did we do?",
+                    "HtmlBody": 'Dear ' + user.name + '<br/><br/>Thank you for reaching Forge Support. We hope we were able to answer your question on ticket #' + ticket.id + ' - ' + ticket.subject + '.<br/><br/><a href=\"https://autodeskfeedback.az1.qualtrics.com/jfe/form/SV_erkQv1I5RASpR0F?CASEID=' + ticket.id + '\">Take the survey</a>.<br/><br/>Regards,<br/>The Forge Team<br/><br/><img src="https://github.com/autodesk-platform-services/cdn/blob/main/wwwroot/logo/white/stacked.png" height="30"/>'
+                }
+                sgMail
+                .send(msg)
+                .then(() => {
+                    console.log('Email sent to:', user.email)
+                })
+                .catch((error) => {
+                    console.error(error)
+                })
             });
         });
     });
