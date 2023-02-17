@@ -344,7 +344,7 @@ function getRecentlyClosed() {
                     console.log('Email sent to:', user.email)
                 })
                 .catch((error) => {
-                    console.log(mgs)
+                    console.log(msg)
                     console.error(error)
                 })
             });
