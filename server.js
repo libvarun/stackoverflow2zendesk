@@ -336,7 +336,7 @@ function getRecentlyClosed() {
                     "From": process.env.SENDGRID_FROM_EMAIL,
                     "To": user.email,
                     "Subject": "APS Support: How did we do?",
-                    "HtmlBody": 'Dear ' + user.name + '<br/><br/>Thank you for reaching APS Support. We hope we were able to answer your question on ticket #' + ticket.id + ' - ' + ticket.subject + '.<br/><br/><a href=\"https://autodeskfeedback.az1.qualtrics.com/jfe/form/SV_erkQv1I5RASpR0F?CASEID=' + ticket.id + '\">Take the survey</a>.<br/><br/>Regards,<br/>The Autodesk Platform Services (formerly Forge)<br/><br/><img src="https://cdn.autodesk.io/logo/black/stacked.png" height="30"/>'
+                    "Html": 'Dear ' + user.name + '<br/><br/>Thank you for reaching APS Support. We hope we were able to answer your question on ticket #' + ticket.id + ' - ' + ticket.subject + '.<br/><br/><a href=\"https://autodeskfeedback.az1.qualtrics.com/jfe/form/SV_erkQv1I5RASpR0F?CASEID=' + ticket.id + '\">Take the survey</a>.<br/><br/>Regards,<br/>The Autodesk Platform Services (formerly Forge)<br/><br/><img src="https://cdn.autodesk.io/logo/black/stacked.png" height="30"/>'
                 }
                 sgMail
                 .send(msg)
