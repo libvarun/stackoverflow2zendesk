@@ -311,7 +311,7 @@ function getOverSLA() {
             request.post({
                 'url': 'https://hooks.slack.com/services/' + process.env.SLACK_KEY,
                 'Content-Type': 'application/json',
-                'body': JSON.stringify({ text: '<!here> Ticket over SLA: ' + ticket.subject + ' \nhttps://aps.zendesk.com/agent/tickets/' + ticket.id })
+                'body': JSON.stringify({ text: '<!here> Ticket over SLA: ' + ticket.subject + ' \nhttps://forge.zendesk.com/agent/tickets/' + ticket.id })
             });
         });
     });
@@ -330,7 +330,7 @@ function getRecentlyClosed() {
         }
         tickets.forEach(function (ticket, index) {
             if (ticket.via.channel === 'api') return; // stackoverflow, not possible to get NPS
-            
+
             zendeskclient.users.show(ticket.requester_id, function (err, req, user) {
                 const msg = {
                     "From": process.env.SENDGRID_FROM_EMAIL,
