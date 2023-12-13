@@ -23,7 +23,8 @@ var TAGS = [
     'autodesk-designautomation',
     'autodesk-webhooks',
     'autodesk-realitycapture',
-    'autodesk-bim360'
+    'autodesk-bim360',
+    'autodesk-tandem'
 ];
 // 2. developer key
 var STACKOVERFLOW_DEVELOPER_KEY = process.env.STACKOVERFLOW_DEVELOPERKEY; // this is used for quota (10k per day)
