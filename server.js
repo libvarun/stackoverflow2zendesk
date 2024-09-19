@@ -3,7 +3,6 @@ var cron = require('node-cron');
 var trim = require('trim');
 var zendesk = require('node-zendesk');
 var htmlToText = require('html-to-text');
-const sgMail = require('@sendgrid/mail')
 
 // SETUP: zendesk
 var zendeskclient = zendesk.createClient({
@@ -46,12 +45,6 @@ cron.schedule('5,15,25,35,45,55 * * * *', function () {
 cron.schedule('7 * * * *', function () {
     getOverSLA();
 });
-
-// send NPS survey every hour
-cron.schedule('57 * * * *', function () {
-    getRecentlyClosed();
-});
-
 
 function getNewQuestions() {
     console.log('Stackoverflow - ' + (new Date()).toString());
@@ -318,44 +311,7 @@ function getOverSLA() {
     });
 }
 
-
-function getRecentlyClosed() {
-    sgMail.setApiKey(process.env.SENDGRID_API_KEY)
-
-    var now = new Date();
-    var before1 = new Date(now - 60000 * 60 * 1 /*hour*/);
-    zendeskclient.search.query("created>2021-09-01T00:00:00.000Z solved>" + before1.toISOString(), function (err, req, tickets) {
-        if (err != null || tickets == null || typeof tickets.forEach !== "function") {
-            console.log(err);
-            return;
-        }
-        tickets.forEach(function (ticket, index) {
-            if (ticket.via.channel === 'api') return; // stackoverflow, not possible to get NPS
-
-            zendeskclient.users.show(ticket.requester_id, function (err, req, user) {
-                const msg = {
-                    "From": process.env.SENDGRID_FROM_EMAIL,
-                    "To": user.email,
-                    "Subject": "APS Support: How did we do?",
-                    "Html": 'Dear ' + user.name + '<br/><br/>Thank you for reaching APS Support. We hope we were able to answer your question on ticket #' + ticket.id + ' - ' + ticket.subject + '.<br/><br/><a href=\"https://autodeskfeedback.az1.qualtrics.com/jfe/form/SV_erkQv1I5RASpR0F?CASEID=' + ticket.id + '\">Take the survey</a>.<br/><br/>Regards,<br/>The Autodesk Platform Services (formerly Forge)<br/><br/><img src="https://cdn.autodesk.io/logo/black/stacked.png" height="30"/>'
-                }
-                sgMail
-                .send(msg)
-                .then(() => {
-                    console.log('Email sent to:', user.email)
-                })
-                .catch((error) => {
-                    console.log(msg)
-                    console.error(error)
-                })
-            });
-        });
-    });
-}
-
-
 console.log('Running for tags: ' + TAGS.join(';'));
 adjustQuestionsFromForgePortal();
 getNewQuestions();
 getOverSLA();
-getRecentlyClosed();
